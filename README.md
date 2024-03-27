@@ -1,2 +1,1 @@
-# mccl
-mojo collective cuda library
+### mojo collective cuda library (mccl)
