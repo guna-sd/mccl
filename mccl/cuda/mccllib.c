@@ -1,10 +1,15 @@
 #ifndef CUDA_MCCL
 #define CUDA_MCCL
-#include <cuda.h>
+
 #include <cuda_runtime.h>
+#include <cuda.h>
 #include <cuda_device_runtime_api.h>
+#include <cuda_profiler_api.h>
+#include <curand.h>
 #include <stdio.h>
+
 #endif
+
 
 int Num_devices() {
     int device_count = 0;
