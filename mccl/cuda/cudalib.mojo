@@ -1,39 +1,43 @@
-from sys.ffi import (
-    DLHandle,
-    _get_dylib,
-    _get_dylib_function,
-    _get_global,
-    _get_global_or_null,
-    external_call,
-    _external_call_const,
-    _mlirtype_is_eq,
-    os_is_macos,
-    os_is_linux,
-    os_is_windows,
-)
+from sys.ffi import DLHandle
 from os.env import setenv, getenv
-from pathlib import Path
-from memory import stack_allocation
+from pathlib import Path, cwd
+from sys import exit
 
-fn cwd() -> Path:
-    var buf = stack_allocation[1024, Int8]()
-
-    var res = external_call["getcwd", UnsafePointer[c_char]](
-        buf, Int(1024)
-    )
-    if res == UnsafePointer[c_char]():
-        return ""
-    return String(StringRef(buf))
+alias CUDA_NVTX_LIBRARY_PATH = "/usr/local/cuda/lib64/libnvToolsExt.so"
+alias CUDA_CUDNN_LIBRARY_PATH = "/usr/lib/x86_64-linux-gnu/libcudnn.so.8"
+alias McclPath = "/home/guna/Projects/Open/mccl/mccl/cuda/mccllib.so"
 
 struct CudaLib:
     var lib: DLHandle
 
     fn __init__(inout self):
-        var clib = cwd()
-        if clib.is_dir():
-            _ = setenv("MCCLPATH", str(clib))
-        var cudalib = getenv("MCCLPATH")
-        self.lib = DLHandle(cudalib)
+        try:
+            var clib = cwd()       
+            if clib.is_dir():
+                #var libPath = str(clib) + "/mccllib.so"            
+                _ = setenv("MCCLPATH", McclPath)
+            else:
+                raise Error("Current directory is not valid.")        
+            var cudalib = getenv("MCCLPATH")
+
+            if not cudalib:
+                raise Error("MCCLPATH environment variable is not set correctly.")        
+
+            self.lib = DLHandle(cudalib)        
+
+            if not self.lib.check_symbol("initializeCUDA"):
+                raise Error("Failed to find 'initializeCUDA' in the library.")        
+    
+            self.lib.get_function[fn () -> None]("initializeCUDA")()
+            if not self.isIntialized():
+                raise Error("Cannot initialize 'initializeCUDA' in the library")
+        except e:
+            self.lib = DLHandle("")
+            print(e)
+            exit(1)
+    
+    fn isIntialized(self) -> Bool:
+        return self.load_function[fn () -> Bool]("isCUDAInitialized")()
 
     fn load_function[type: AnyTrivialRegType](self, name: String) -> type:
         """Loads a function from the dynamic library by name.
