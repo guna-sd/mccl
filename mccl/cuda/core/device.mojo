@@ -1,8 +1,167 @@
-struct cudaDeviceProp:
-    ...
+from sys.ffi import c_size_t
+
+struct cudaExtent:
+	var width: c_size_t
+	var height: c_size_t
+	var depth: c_size_t
 
 @value
-struct CudaDeviceAttr(Stringable, Formattable, Representable, KeyElement):
+struct cudaDeviceProp:
+    var name: String
+    """String identifying device."""
+    
+    var totalGlobalMem: c_size_t
+    """Global memory available on device in bytes."""
+    
+    var sharedMemPerBlock: c_size_t
+    """Shared memory available per block in bytes."""
+    
+    var regsPerBlock: Int32
+    """32-bit registers available per block."""
+    
+    var warpSize: Int32
+    """Warp size in threads."""
+    
+    var memPitch: c_size_t
+    """Maximum pitch in bytes allowed by memory copies."""
+    
+    var maxThreadsPerBlock: Int32
+    """Maximum number of threads per block."""
+    
+    var maxThreadsDim: (Int32, Int32, Int32)
+    """Maximum size of each dimension of a block."""
+    
+    var maxGridSize: (Int32, Int32, Int32)
+    """Maximum size of each dimension of a grid."""
+    
+    var clockRate: Int32
+    """Clock frequency in kilohertz."""
+    
+    var totalConstMem: c_size_t
+    """Constant memory available on device in bytes."""
+    
+    var major: Int32
+    """Major compute capability."""
+    
+    var minor: Int32
+    """Minor compute capability."""
+    
+    var textureAlignment: c_size_t
+    """Alignment requirement for textures."""
+    
+    var texturePitchAlignment: c_size_t
+    """Pitch alignment requirement for texture references bound to pitched memory."""
+    
+    var deviceOverlap: Int32
+    """Device can concurrently copy memory and execute a kernel (deprecated)."""
+    
+    var multiProcessorCount: Int32
+    """Number of multiprocessors on device."""
+    
+    var kernelExecTimeoutEnabled: Int32
+    """Specifies if there's a runtime limit on kernels."""
+    
+    var integrated: Int32
+    """Device is integrated as opposed to discrete."""
+    
+    var canMapHostMemory: Int32
+    """Device can map host memory."""
+    
+    var computeMode: Int32
+    """Compute mode."""
+    
+    var maxTexture1D: Int32
+    """Maximum 1D texture size."""
+    
+    var maxTexture1DLinear: Int32
+    """Maximum size for 1D textures bound to linear memory."""
+    
+    var maxTexture2D: (Int32, Int32)
+    """Maximum 2D texture dimensions."""
+    
+    var maxTexture2DLinear: (Int32, Int32, Int32)
+    """Maximum dimensions (width, height, pitch) for 2D textures bound to pitched memory."""
+    
+    var maxTexture2DGather: (Int32, Int32)
+    """Maximum 2D texture dimensions for gather operations."""
+    
+    var maxTexture3D: (Int32, Int32, Int32)
+    """Maximum 3D texture dimensions."""
+    
+    var maxTextureCubemap: Int32
+    """Maximum cubemap texture dimensions."""
+    
+    var maxTexture1DLayered: (Int32, Int32)
+    """Maximum 1D layered texture dimensions."""
+    
+    var maxTexture2DLayered: (Int32, Int32, Int32)
+    """Maximum 2D layered texture dimensions."""
+    
+    var maxTextureCubemapLayered: (Int32, Int32)
+    """Maximum cubemap layered texture dimensions."""
+    
+    var maxSurface1D: Int32
+    """Maximum 1D surface size."""
+    
+    var maxSurface2D: (Int32, Int32)
+    """Maximum 2D surface dimensions."""
+    
+    var maxSurface3D: (Int32, Int32, Int32)
+    """Maximum 3D surface dimensions."""
+    
+    var maxSurface1DLayered: (Int32, Int32)
+    """Maximum 1D layered surface dimensions."""
+    
+    var maxSurface2DLayered: (Int32, Int32, Int32)
+    """Maximum 2D layered surface dimensions."""
+    
+    var maxSurfaceCubemap: Int32
+    """Maximum cubemap surface dimensions."""
+    
+    var maxSurfaceCubemapLayered: (Int32, Int32)
+    """Maximum cubemap layered surface dimensions."""
+    
+    var surfaceAlignment: c_size_t
+    """Alignment requirements for surfaces."""
+    
+    var concurrentKernels: Int32
+    """Device can execute multiple kernels concurrently."""
+    
+    var ECCEnabled: Int32
+    """Device has ECC support enabled."""
+    
+    var pciBusID: Int32
+    """PCI bus ID of the device."""
+    
+    var pciDeviceID: Int32
+    """PCI device ID of the device."""
+    
+    var pciDomainID: Int32
+    """PCI domain ID of the device."""
+    
+    var tccDriver: Int32
+    """1 if device is a Tesla device using TCC driver, 0 otherwise."""
+    
+    var asyncEngineCount: Int32
+    """Number of asynchronous engines."""
+    
+    var unifiedAddressing: Int32
+    """Device shares a unified address space with the host."""
+    
+    var memoryClockRate: Int32
+    """Peak memory clock frequency in kilohertz."""
+    
+    var memoryBusWidth: Int32
+    """Global memory bus width in bits."""
+    
+    var l2CacheSize: Int32
+    """Size of L2 cache in bytes."""
+    
+    var maxThreadsPerMultiProcessor: Int32
+    """Maximum resident threads per multiprocessor."""
+
+@value
+struct CudaDeviceAttr(Stringable, Writable, Representable, KeyElement):
     alias cudaDevAttrMaxThreadsPerBlock             = CudaDeviceAttr(1)  # Maximum number of threads per block
     alias cudaDevAttrMaxBlockDimX                   = CudaDeviceAttr(2)  # Maximum block dimension X
     alias cudaDevAttrMaxBlockDimY                   = CudaDeviceAttr(3)  # Maximum block dimension Y
@@ -92,7 +251,7 @@ struct CudaDeviceAttr(Stringable, Formattable, Representable, KeyElement):
         Returns:
             The name of the CudaDeviceAttr.
         """
-        return String.format_sequence(self)
+        return String.write(self)
 
     @always_inline("nodebug")
     fn __repr__(self) -> String:
@@ -113,7 +272,7 @@ struct CudaDeviceAttr(Stringable, Formattable, Representable, KeyElement):
         return hash(UInt8(self.value))
     
     @no_inline
-    fn format_to(self, inout writer: Formatter):
+    fn write_to[W: Writer](self, inout writer: W):
         if self == CudaDeviceAttr.cudaDevAttrMaxThreadsPerBlock:
             writer.write("Maximum number of threads per block")
         elif self == CudaDeviceAttr.cudaDevAttrMaxBlockDimX:

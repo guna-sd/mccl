@@ -1,5 +1,5 @@
 @value
-struct CudaError(Stringable, Formattable, Representable, KeyElement):
+struct CudaError(Stringable, Writable, Representable, KeyElement):
     alias cudaSuccess                           = CudaError(0)      # No errors
     alias cudaErrorMissingConfiguration         = CudaError(1)      # Missing configuration error
     alias cudaErrorMemoryAllocation             = CudaError(2)      # Memory allocation error
@@ -55,7 +55,7 @@ struct CudaError(Stringable, Formattable, Representable, KeyElement):
             The name of the CudaError.
         """
 
-        return String.format_sequence(self)
+        return String.write(self)
 
     @always_inline("nodebug")
     fn __repr__(self) -> String:
@@ -76,7 +76,7 @@ struct CudaError(Stringable, Formattable, Representable, KeyElement):
         return hash(UInt8(self.value))
     
     @no_inline
-    fn format_to(self, inout writer: Formatter):
+    fn write_to[W: Writer](self, inout writer: W):
         if self == CudaError.cudaSuccess:
             return writer.write("No errors")
         elif self == CudaError.cudaErrorMissingConfiguration:
@@ -210,3 +210,304 @@ struct CudaError(Stringable, Formattable, Representable, KeyElement):
             True if the CudaErrors are the same and False otherwise.
         """
         return self != rhs
+
+@value
+struct CudaResult:
+    alias CUDA_SUCCESS                              = CudaResult(0)
+
+    """
+    This indicates that one or more of the parameters passed to the API call
+    is not within an acceptable range of values.
+    """
+    alias CUDA_ERROR_INVALID_VALUE                  = CudaResult(1)
+
+    """
+    The API call failed because it was unable to allocate enough memory to
+    perform the requested operation.
+    """
+    alias CUDA_ERROR_OUT_OF_MEMORY                  = CudaResult(2)
+
+    """
+    This indicates that the CUDA driver has not been initialized with
+    ::cuInit() or that initialization has failed.
+    """
+    alias CUDA_ERROR_NOT_INITIALIZED                = CudaResult(3)
+
+    """
+    This indicates that the CUDA driver is in the process of shutting down.
+    """
+    alias CUDA_ERROR_DEINITIALIZED                  = CudaResult(4)
+
+    """
+    This indicates profiling APIs are called while application is running
+    in visual profiler mode. 
+    """
+    alias CUDA_ERROR_PROFILER_DISABLED               = CudaResult(5)
+
+    """
+    This indicates profiling has not been initialized for this context. 
+    Call cuProfilerInitialize() to resolve this. 
+    """
+    alias CUDA_ERROR_PROFILER_NOT_INITIALIZED       = CudaResult(6)
+
+    """
+    This indicates profiler has already been started and probably
+    cuProfilerStart() is incorrectly called.
+    """
+    alias CUDA_ERROR_PROFILER_ALREADY_STARTED       = CudaResult(7)
+
+    """
+    This indicates profiler has already been stopped and probably
+    cuProfilerStop() is incorrectly called.
+    """
+    alias CUDA_ERROR_PROFILER_ALREADY_STOPPED       = CudaResult(8)  
+
+    """
+    This indicates that no CUDA-capable devices were detected by the installed
+    CUDA driver.
+    """
+    alias CUDA_ERROR_NO_DEVICE                      = CudaResult(100)
+
+    """
+    This indicates that the device ordinal supplied by the user does not
+    correspond to a valid CUDA device.
+    """
+    alias CUDA_ERROR_INVALID_DEVICE                 = CudaResult(101)
+
+    """
+    This indicates that the device kernel image is invalid. This can also
+    indicate an invalid CUDA module.
+    """
+    alias CUDA_ERROR_INVALID_IMAGE                  = CudaResult(200)
+
+    """
+    This most frequently indicates that there is no context bound to the
+    current thread. This can also be returned if the context passed to an
+    API call is not a valid handle (such as a context that has had
+    ::cuCtxDestroy() invoked on it). This can also be returned if a user
+    mixes different API versions (i.e. 3010 context with 3020 API calls).
+    See ::cuCtxGetApiVersion() for more details.
+    """
+    alias CUDA_ERROR_INVALID_CONTEXT                = CudaResult(201)
+
+    """
+    This indicated that the context being supplied as a parameter to the
+    API call was already the active context.
+    deprecated
+    This error return is deprecated as of CUDA 3.2. It is no longer an
+    error to attempt to push the active context via ::cuCtxPushCurrent().
+    """
+    alias CUDA_ERROR_CONTEXT_ALREADY_CURRENT        = CudaResult(202)
+
+    """
+    This indicates that a map or register operation has failed.
+    """
+    alias CUDA_ERROR_MAP_FAILED                     = CudaResult(205)
+
+    """
+    This indicates that an unmap or unregister operation has failed.
+    """
+    alias CUDA_ERROR_UNMAP_FAILED                   = CudaResult(206)
+
+    """
+    This indicates that the specified array is currently mapped and thus
+    cannot be destroyed.
+    """
+    alias CUDA_ERROR_ARRAY_IS_MAPPED                = CudaResult(207)
+
+    """
+    This indicates that the resource is already mapped.
+    """
+    alias CUDA_ERROR_ALREADY_MAPPED                 = CudaResult(208)
+
+    """
+    This indicates that there is no kernel image available that is suitable
+    for the device. This can occur when a user specifies code generation
+    options for a particular CUDA source file that do not include the
+    corresponding device configuration.
+    """
+    alias CUDA_ERROR_NO_BINARY_FOR_GPU              = CudaResult(209)
+
+    """
+    This indicates that a resource has already been acquired.
+    """
+    alias CUDA_ERROR_ALREADY_ACQUIRED               = CudaResult(210)
+
+    """
+    This indicates that a resource is not mapped.
+    """
+    alias CUDA_ERROR_NOT_MAPPED                     = CudaResult(211)
+
+    """
+    This indicates that a mapped resource is not available for access as an
+    array.
+    """
+    alias CUDA_ERROR_NOT_MAPPED_AS_ARRAY            = CudaResult(212)
+
+    """
+    This indicates that a mapped resource is not available for access as a
+    pointer.
+    """
+    alias CUDA_ERROR_NOT_MAPPED_AS_POINTER          = CudaResult(213)
+
+    """
+    This indicates that an uncorrectable ECC error was detected during
+    execution.
+    """
+    alias CUDA_ERROR_ECC_UNCORRECTABLE              = CudaResult(214)
+
+    """
+    This indicates that the ::CUlimit passed to the API call is not
+    supported by the active device.
+    """
+    alias CUDA_ERROR_UNSUPPORTED_LIMIT              = CudaResult(215)
+
+    """
+    This indicates that the ::CUcontext passed to the API call can
+    only be bound to a single CPU thread at a time but is already 
+    bound to a CPU thread.
+    """
+    alias CUDA_ERROR_CONTEXT_ALREADY_IN_USE         = CudaResult(216)
+
+    """
+    This indicates that the device kernel source is invalid.
+    """
+    alias CUDA_ERROR_INVALID_SOURCE                 = CudaResult(300)
+
+    """
+    This indicates that the file specified was not found.
+    """
+    alias CUDA_ERROR_FILE_NOT_FOUND                 = CudaResult(301)
+
+    """
+    This indicates that a link to a shared object failed to resolve.
+    """
+    alias CUDA_ERROR_SHARED_OBJECT_SYMBOL_NOT_FOUND = CudaResult(302)
+
+    """
+    This indicates that initialization of a shared object failed.
+    """
+    alias CUDA_ERROR_SHARED_OBJECT_INIT_FAILED      = CudaResult(303)
+
+    """
+    This indicates that an OS call failed.
+    """
+    alias CUDA_ERROR_OPERATING_SYSTEM               = CudaResult(304)
+
+    """
+    This indicates that a resource handle passed to the API call was not
+    valid. Resource handles are opaque types like ::CUstream and ::CUevent.
+    """
+    alias CUDA_ERROR_INVALID_HANDLE                 = CudaResult(400)
+
+    """
+    This indicates that a named symbol was not found. Examples of symbols
+    are global/constant variable names, texture names, and surface names.
+    """
+    alias CUDA_ERROR_NOT_FOUND                      = CudaResult(500)
+
+    """
+    This indicates that asynchronous operations issued previously have not
+    completed yet. This result is not actually an error, but must be indicated
+    differently than ::CUDA_SUCCESS (which indicates completion). Calls that
+    may return this value include ::cuEventQuery() and ::cuStreamQuery().
+    """
+    alias CUDA_ERROR_NOT_READY                      = CudaResult(600)
+
+    """
+    An exception occurred on the device while executing a kernel. Common
+    causes include dereferencing an invalid device pointer and accessing
+    out of bounds shared memory. The context cannot be used, so it must
+    be destroyed (and a new one should be created). All existing device
+    memory allocations from this context are invalid and must be
+    reconstructed if the program is to continue using CUDA.
+    """
+    alias CUDA_ERROR_LAUNCH_FAILED                  = CudaResult(700)
+
+    """
+    This indicates that a launch did not occur because it did not have
+    appropriate resources. This error usually indicates that the user has
+    attempted to pass too many arguments to the device kernel, or the
+    kernel launch specifies too many threads for the kernel's register
+    count. Passing arguments of the wrong size (i.e. a 64-bit pointer
+    when a 32-bit int is expected) is equivalent to passing too many
+    arguments and can also result in this error.
+    """
+    alias CUDA_ERROR_LAUNCH_OUT_OF_RESOURCES        = CudaResult(701)
+
+    """
+    This indicates that the device kernel took too long to execute. This can
+    only occur if timeouts are enabled - see the device attribute
+    ::CU_DEVICE_ATTRIBUTE_KERNEL_EXEC_TIMEOUT for more information. The
+    context cannot be used (and must be destroyed similar to
+    ::CUDA_ERROR_LAUNCH_FAILED). All existing device memory allocations from
+    this context are invalid and must be reconstructed if the program is to
+    continue using CUDA.
+    """
+    alias CUDA_ERROR_LAUNCH_TIMEOUT                 = CudaResult(702)
+
+    """
+    This error indicates a kernel launch that uses an incompatible texturing
+    mode.
+    """
+    alias CUDA_ERROR_LAUNCH_INCOMPATIBLE_TEXTURING  = CudaResult(703)
+
+    """
+    This error indicates that a call to ::cuCtxEnablePeerAccess() is
+    trying to re-enable peer access to a context which has already
+    had peer access to it enabled.
+    """
+    alias CUDA_ERROR_PEER_ACCESS_ALREADY_ENABLED    = CudaResult(704)
+
+    """
+    This error indicates that ::cuCtxDisablePeerAccess() is 
+    trying to disable peer access which has not been enabled yet 
+    via ::cuCtxEnablePeerAccess(). 
+    """
+    alias CUDA_ERROR_PEER_ACCESS_NOT_ENABLED        = CudaResult(705)
+
+    """
+    This error indicates that the primary context for the specified device
+    has already been initialized.
+    """
+    alias CUDA_ERROR_PRIMARY_CONTEXT_ACTIVE         = CudaResult(708)
+
+    """
+    This error indicates that the context current to the calling thread
+    has been destroyed using ::cuCtxDestroy, or is a primary context which
+    has not yet been initialized.
+    """
+    alias CUDA_ERROR_CONTEXT_IS_DESTROYED           = CudaResult(709)
+
+    """
+    A device-side assert triggered during kernel execution. The context
+    cannot be used anymore, and must be destroyed. All existing device 
+    memory allocations from this context are invalid and must be 
+    reconstructed if the program is to continue using CUDA.
+    """
+    alias CUDA_ERROR_ASSERT                         = CudaResult(710)
+
+    """
+    This error indicates that the hardware resources required to enable
+    peer access have been exhausted for one or more of the devices 
+    passed to ::cuCtxEnablePeerAccess().
+    """
+    alias CUDA_ERROR_TOO_MANY_PEERS                 = CudaResult(711)
+
+    """
+    This error indicates that the memory range passed to ::cuMemHostRegister() has already been registered.
+    """
+    alias CUDA_ERROR_HOST_MEMORY_ALREADY_REGISTERED = CudaResult(712)
+
+    """
+    This error indicates that the pointer passed to ::cuMemHostUnregister()
+    does not correspond to any currently registered memory region.
+    """
+    alias CUDA_ERROR_HOST_MEMORY_NOT_REGISTERED     = CudaResult(713)
+
+    """
+    This indicates that an unknown internal error has occurred.
+    """
+    alias CUDA_ERROR_UNKNOWN                        = CudaResult(999)
+
+    var value: Int
